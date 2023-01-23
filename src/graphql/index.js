@@ -1,34 +1,25 @@
 const { ApolloServer } = require('apollo-server-express')
 const { ApolloServerPluginLandingPageLocalDefault } = require('apollo-server-core')
-
-const typeDefs = `
-    type Query {
-        hello: String
-        getPerson(name:String, age: Int): String
-        getInt(age: Int): Int
-        getFloat(price: Float): Float
-        getString: String
-        getBoolean: Boolean
-        getID: ID
-    }
-`;
-
-const resolvers = {
-    Query: {
-        hello: () => 'hola mundo',
-        getPerson: (_, args) => `Hello, my name is ${args.name}. I'm ${args.age} years old`,
-        getInt: (_, args) => args.age,
-        getFloat: (_, args) => args.price,
-        getString: () => 'Palabra',
-        getBoolean: ()=> true,
-        getID: () => '12345'
-    }
-}
+const { loadFiles } = require('@graphql-tools/load-files')
+const resolvers = require('./resolvers')
+const { buildContext } = require('graphql-passport')
+const { typeDefs: scalarsTypeDefs, resolvers: scalarsResolvers } = require('graphql-scalars')
 
 const useGraphql = async (app) => {
+
+  const typeDefs = [
+    ...await loadFiles('./src/**/*.graphql'),
+    scalarsTypeDefs
+  ];
+  const allResolvers = [
+    resolvers,
+    scalarsResolvers
+  ]
+
     const server = new ApolloServer({
-        typeDefs, 
-        resolvers,
+        typeDefs,
+        resolvers: allResolvers,
+        context: ({req,res}) => buildContext({req,res}),
         playground : true,
         plugins: [ ApolloServerPluginLandingPageLocalDefault ]
     });
